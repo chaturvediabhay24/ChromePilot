@@ -1,19 +1,19 @@
 {
   "manifest_version": 3,
   "name": "ChromePilot - Browser Agent",
-  "version": "0.1.4",
-  "description": "AI agent for automating browser tasks",
+  "version": "0.1.5",
+  "description": "Automate browser tasks from a side panel with GitHub Copilot. Compatible Copilot access required.",
   "permissions": [
     "activeTab",
     "scripting",
     "sidePanel",
     "storage",
-    "cookies",
     "tabs",
     "webNavigation"
   ],
   "host_permissions": [
-    "<all_urls>"
+    "https://*/*",
+    "http://*/*"
   ],
   "side_panel": {
     "default_path": "sidepanel/index.html"
@@ -21,26 +21,14 @@
   "background": {
     "service_worker": "service-worker.js"
   },
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["content-script.js"],
-      "all_frames": true,
-      "run_at": "document_idle"
-    }
-  ],
-  "web_accessible_resources": [
-    {
-      "resources": ["system-prompt.md", "skills/*", "agents/registry.json", "agents/*", "agents/**/*"],
-      "matches": ["<all_urls>"]
-    }
-  ],
   "action": {
-        "default_title": "ChromePilot - Browser Agent"
+    "default_title": "ChromePilot - Browser Agent"
   },
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
-  }
+  },
+  "author": "Abhay Chaturvedi",
+  "homepage_url": "https://github.com/chaturvediabhay24/ChromePilot"
 }

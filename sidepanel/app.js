@@ -263,7 +263,7 @@ async function loadSettings() {
   document.getElementById("auto-snapshot").checked = config.autoSnapshot !== false;
 
   // Render tool checklists
-  const ALL_TOOLS = ["click", "type", "select", "scroll", "press_key", "hover", "drag_drop", "mouse_click_xy", "navigate", "navigate_back", "evaluate", "file_upload", "get_dom_snapshot", "get_screenshot", "console_messages", "wait", "resize", "handle_dialog", "get_cookies", "set_cookie", "get_localstorage", "set_localstorage", "network_requests", "pdf_save", "tabs"];
+  const ALL_TOOLS = ["click", "type", "select", "scroll", "press_key", "hover", "drag_drop", "mouse_click_xy", "navigate", "navigate_back", "file_upload", "get_dom_snapshot", "get_screenshot", "console_messages", "wait", "resize", "handle_dialog", "network_requests", "pdf_save", "tabs"];
   const ALL_AGENT_TOOLS = [...ALL_TOOLS, "get_page_text", "verify_text_visible", "verify_element_visible", "mouse_wheel", "highlight", "list_skills", "load_skill", "context_management"];
   const DEFAULT_SNAPSHOT_TOOLS = ["click", "type", "select", "scroll", "press_key", "hover", "drag_drop", "mouse_click_xy", "navigate", "navigate_back", "file_upload"];
   const DEFAULT_PURGE_TOOLS = ["get_dom_snapshot", "get_screenshot"];
@@ -271,7 +271,7 @@ async function loadSettings() {
     "get_dom_snapshot", "get_page_text", "get_screenshot",
     "verify_text_visible", "verify_element_visible",
     "console_messages", "network_requests",
-    "get_cookies", "get_localstorage",
+    "get_localstorage",
     "list_skills", "load_skill",
     "context_management", "wait"
   ];
@@ -285,9 +285,7 @@ async function loadSettings() {
   renderToolChecklist("no-delay-tools", ALL_AGENT_TOOLS, noDelayTools);
 
   // Activate correct tab based on provider (default to copilot when unset)
-  const activeTab = config.activeProvider === "bedrock" ? "bedrock-tab"
-    : config.activeProvider === "copilot" ? "copilot-tab"
-    : "custom-tab";
+  const activeTab = "copilot-tab";
   document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
   document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
   const activeBtn = document.querySelector(`[data-tab="${activeTab}"]`);
@@ -503,7 +501,7 @@ function scrollChat() {
 
 function applyDevMode(enabled) {
   document.getElementById("history-toggle").classList.toggle("hidden", !enabled);
-  document.getElementById("custom-tab-btn").style.display = enabled ? "" : "none";
+  document.getElementById("custom-tab-btn").style.display = "none";
 }
 
 (function initDevMode() {
@@ -539,6 +537,12 @@ async function handleSend() {
     return;
   }
 
+  if (!document.getElementById("ai-data-consent").checked) {
+    settingsPanel.classList.remove("hidden");
+    addMessage("system", "Please review and accept the data disclosure in Settings first.");
+    return;
+  }
+  await chrome.storage.local.set({ aiDataConsent: true });
   addMessage("user", text);
   input.value = "";
 
@@ -713,7 +717,7 @@ chrome.runtime.onMessage.addListener((msg) => {
       if (liveReasoningDiv.textContent.trim()) {
         const finalDiv = document.createElement("div");
         finalDiv.className = "msg agent";
-        finalDiv.innerHTML = liveReasoningDiv.textContent;
+        finalDiv.textContent = liveReasoningDiv.textContent;
         renderMarkdown(finalDiv);
         liveReasoningDiv.remove();
         document.getElementById("messages").appendChild(finalDiv);
@@ -1008,3 +1012,21 @@ updateProviderBadge();
 updateCopilotStatus();
 initSessions();
 initAgentPicker();
+
+
+// Explicit disclosure before any task sends page content to the AI provider.
+chrome.storage.local.get("aiDataConsent").then(data => {
+  document.getElementById("ai-data-consent").checked = data.aiDataConsent === true;
+});
+document.getElementById("ai-data-consent").addEventListener("change", async event => {
+  await chrome.storage.local.set({ aiDataConsent: event.target.checked });
+  if (!event.target.checked) chrome.runtime.sendMessage({ type: "stop_run" });
+});
+document.getElementById("clear-local-data").addEventListener("click", async () => {
+  if (!confirm("Delete all ChromePilot sessions, saved credentials and settings on this device?")) return;
+  await chrome.runtime.sendMessage({ type: "stop_run" });
+  await chrome.storage.local.clear();
+  await chrome.storage.session.clear();
+  localStorage.clear();
+  chrome.runtime.reload();
+});

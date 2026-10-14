@@ -66,13 +66,13 @@
   <!-- Settings overlay -->
   <div id="settings-panel" class="hidden">
     <div class="settings-tabs">
-      <button class="tab-btn active" data-tab="custom-tab" id="custom-tab-btn">Custom API</button>
-      <button class="tab-btn" data-tab="bedrock-tab">AWS Bedrock</button>
-      <button class="tab-btn" data-tab="copilot-tab">GitHub Copilot</button>
+      <button class="tab-btn hidden" data-tab="custom-tab" id="custom-tab-btn">Custom API</button>
+      <button class="tab-btn hidden" data-tab="bedrock-tab">AWS Bedrock</button>
+      <button class="tab-btn active" data-tab="copilot-tab">GitHub Copilot</button>
       <button class="tab-btn" data-tab="general-tab">General</button>
     </div>
 
-    <div id="custom-tab" class="tab-content active">
+    <div id="custom-tab" class="tab-content">
       <form id="settings-form">
         <label>API URL
           <input type="url" id="api-url" placeholder="http://localhost:8000/chat/completions">
@@ -171,9 +171,9 @@
       </form>
     </div>
 
-    <div id="copilot-tab" class="tab-content">
+    <div id="copilot-tab" class="tab-content active">
       <form id="copilot-form">
-        <p class="section-note">Uses your company's GitHub Copilot license. Sign in with your GitHub account to authenticate automatically.</p>
+        <p class="section-note">Requires compatible GitHub Copilot access; organization policies may restrict access. Other AI subscriptions are not supported in this release. ChromePilot is an independent project.</p>
 
         <div id="copilot-status" class="copilot-status">
           <span id="copilot-status-text">Not signed in</span>
@@ -201,6 +201,14 @@
       </form>
     </div>
 
+    <section class="about-chromepilot" aria-label="Privacy and data">
+      <h3>Before you run a task</h3>
+      <p>ChromePilot sends your prompts, conversation history, page text, tab URLs and titles, screenshots, and requested diagnostic output to GitHub Copilot to perform your tasks. Pages may contain personal or confidential information. Actions can change websites.</p>
+      <label class="checkbox-label"><input type="checkbox" id="ai-data-consent"> I agree to this data use for browser tasks.</label>
+      <p>Sessions and credentials are stored on this device. Review sensitive pages before running tasks; use Stop to end a run.</p>
+      <p><a href="../privacy.html" target="_blank" rel="noopener">Read the privacy policy</a></p>
+      <button id="clear-local-data" type="button">Delete all local data</button>
+    </section>
     <div class="about-chromepilot">
       <div class="about-title">About ChromePilot</div>
       <div>Created by Abhay Chaturvedi</div>

@@ -151,7 +151,7 @@
           let line = `[${index}] ${getElementType(el)}`;
           const label = getLabel(el);
           if (label) line += ` "${label}"`;
-          if (el.value) line += ` value="${el.value}"`;
+          if (el.value && el.type !== "password") line += ` value="${el.value}"`;
           if (el.tagName === "SELECT") {
             const opts = Array.from(el.options).slice(0, 10).map(o => `"${o.text.trim()}"`);
             line += ` options=[${opts.join(",")}]`;
@@ -361,7 +361,7 @@
         localIndex: i,
         type: getElementType(el.el),
         label: getLabel(el.el),
-        value: el.el.value || el.el.getAttribute("value") || "",
+        value: el.el.type === "password" ? "" : (el.el.value || el.el.getAttribute("value") || ""),
         selector: el.selector,
         disabled: el.el.disabled || el.el.getAttribute("aria-disabled") === "true",
         required: el.el.required || el.el.getAttribute("aria-required") === "true",
