@@ -1,0 +1,7 @@
+{
+  "id": "default",
+  "name": "Default",
+  "icon": "🤖",
+  "description": "General-purpose browser automation agent",
+  "skills": "*"
+}

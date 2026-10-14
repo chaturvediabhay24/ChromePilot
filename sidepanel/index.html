@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>ChromePilot</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>ChromePilot <span id="provider-badge" class="provider-badge"></span></h1>
+    <div class="header-actions">
+      <div class="picker-wrap">
+        <button id="agent-picker-btn" class="header-icon-btn" title="Select agent">
+          <span class="icon-btn-icon">🤖</span>
+          <span id="agent-picker-label" class="icon-btn-label">Default</span>
+        </button>
+        <div id="agent-picker-panel" class="picker-panel hidden">
+          <div class="picker-panel-header">
+            <span>Agent</span>
+          </div>
+          <div id="agent-list"></div>
+        </div>
+      </div>
+      <div class="picker-wrap">
+        <button id="session-picker-btn" class="header-icon-btn" title="Switch session">
+          <span class="icon-btn-icon">💬</span>
+          <span id="session-picker-label" class="icon-btn-label">Session</span>
+        </button>
+        <div id="session-picker-panel" class="picker-panel hidden">
+          <div class="picker-panel-header">
+            <span>Sessions</span>
+            <button id="new-session-btn" class="picker-new-btn" title="New session">+</button>
+          </div>
+          <div id="session-list"></div>
+        </div>
+      </div>
+      <div class="picker-wrap">
+        <button id="tab-picker-btn" class="header-icon-btn" title="Select target tab">
+          <span class="icon-btn-icon">👁</span>
+          <span id="tab-picker-label" class="icon-btn-label">Tab</span>
+        </button>
+        <div id="tab-picker-panel" class="picker-panel hidden">
+          <div class="picker-panel-header">
+            <span>Target Tab</span>
+          </div>
+          <div id="tab-list"></div>
+        </div>
+      </div>
+      <button id="popout-btn" title="Pop out to separate window">⧉</button>
+      <button id="history-toggle" title="View conversation JSON" class="hidden">{ }</button>
+      <button id="settings-toggle" title="Settings">⚙</button>
+    </div>
+  </header>
+
+  <select id="target-tab-select" class="hidden"></select>
+
+  <!-- History overlay -->
+  <div id="history-panel" class="hidden">
+    <div class="panel-header">
+      <h3>Conversation JSON</h3>
+      <button id="history-close">✕</button>
+    </div>
+    <textarea id="history-json" readonly></textarea>
+  </div>
+
+  <!-- Settings overlay -->
+  <div id="settings-panel" class="hidden">
+    <div class="settings-tabs">
+      <button class="tab-btn active" data-tab="custom-tab" id="custom-tab-btn">Custom API</button>
+      <button class="tab-btn" data-tab="bedrock-tab">AWS Bedrock</button>
+      <button class="tab-btn" data-tab="copilot-tab">GitHub Copilot</button>
+      <button class="tab-btn" data-tab="general-tab">General</button>
+    </div>
+
+    <div id="custom-tab" class="tab-content active">
+      <form id="settings-form">
+        <label>API URL
+          <input type="url" id="api-url" placeholder="http://localhost:8000/chat/completions">
+        </label>
+        <label>API Token
+          <input type="password" id="api-token" placeholder="Bearer token">
+        </label>
+        <label>Model ID
+          <input type="text" id="model-id" placeholder="model-name" value="">
+        </label>
+        <div class="form-actions">
+          <button type="submit" class="primary">Save</button>
+          <button type="button" id="settings-close">Cancel</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="general-tab" class="tab-content">
+      <form id="general-form">
+
+        <fieldset class="settings-section">
+          <legend>Timing</legend>
+          <p class="section-note">Controls how long to wait after each page-modifying action before the agent continues. Gives the page time to render dynamic content.</p>
+          <label>Post-Action Delay (ms)
+            <input type="number" id="action-delay" placeholder="5000" value="5000" min="0" max="10000" step="100">
+          </label>
+        </fieldset>
+
+        <fieldset class="settings-section">
+          <legend>No Post-Action Delay</legend>
+          <p class="section-note">Tools checked here skip the post-action delay entirely. Read-only tools are selected by default.</p>
+          <label>Skip delay for:
+            <div id="no-delay-tools" class="tool-checklist"></div>
+          </label>
+        </fieldset>
+
+        <fieldset class="settings-section">
+          <legend>DOM Snapshot Defaults</legend>
+          <p class="section-note">Default parameters for every get_dom_snapshot call. Controls how much of the page the agent sees per call.</p>
+          <label>Offset <span class="hint-inline">— start line (0 = top of page)</span>
+            <input type="number" id="snapshot-offset" placeholder="0" value="0" min="0" step="10">
+          </label>
+          <label>Limit <span class="hint-inline">— lines per call (more = more tokens)</span>
+            <input type="number" id="snapshot-limit" placeholder="200" value="200" min="10" max="200" step="10">
+          </label>
+          <label>Depth <span class="hint-inline">— iframe nesting levels to recurse</span>
+            <input type="number" id="snapshot-depth" placeholder="5" value="5" min="1" max="10">
+          </label>
+        </fieldset>
+
+        <fieldset class="settings-section">
+          <legend>Auto-Snapshot</legend>
+          <p class="section-note">After the selected tools execute, a DOM snapshot is automatically appended to the response. This saves a full LLM round trip — the agent sees updated page state without asking for it.</p>
+          <label class="checkbox-label">
+            <input type="checkbox" id="auto-snapshot" checked>
+            Enable auto-snapshot
+          </label>
+          <label>Trigger tools:
+            <div id="auto-snapshot-tools" class="tool-checklist"></div>
+          </label>
+        </fieldset>
+
+        <fieldset class="settings-section">
+          <legend>Auto-Purge</legend>
+          <p class="section-note">When the agent finishes (responds with text, no more tool calls), outputs from the selected tools are replaced with a placeholder in conversation history. Keeps context lean and delays hitting token limits.</p>
+          <label>Purge outputs from:
+            <div id="auto-purge-tools" class="tool-checklist"></div>
+          </label>
+        </fieldset>
+
+        <div class="form-actions">
+          <button type="submit" class="primary">Save</button>
+          <button type="button" id="general-close">Cancel</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="bedrock-tab" class="tab-content">
+      <form id="bedrock-form">
+        <label>Access Key ID
+          <input type="text" id="bedrock-access-key" placeholder="AKIA...">
+        </label>
+        <label>Secret Access Key
+          <input type="password" id="bedrock-secret-key" placeholder="Secret key">
+        </label>
+        <label>Session Token (optional)
+          <input type="password" id="bedrock-session-token" placeholder="Session token for temporary credentials">
+        </label>
+        <label>Model ID
+          <input type="text" id="bedrock-model-id" placeholder="us.anthropic.claude-sonnet-4-20250514-v1:0" value="us.anthropic.claude-sonnet-4-20250514-v1:0">
+        </label>
+        <div class="form-actions">
+          <button type="submit" class="primary">Save</button>
+          <button type="button" id="bedrock-close">Cancel</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="copilot-tab" class="tab-content">
+      <form id="copilot-form">
+        <p class="section-note">Uses your company's GitHub Copilot license. Sign in with your GitHub account to authenticate automatically.</p>
+
+        <div id="copilot-status" class="copilot-status">
+          <span id="copilot-status-text">Not signed in</span>
+        </div>
+
+        <div id="copilot-device-code" class="copilot-device-code hidden">
+          <p>Go to <a id="copilot-verify-link" href="#" target="_blank">github.com/login/device</a> and enter this code:</p>
+          <div id="copilot-user-code" class="copilot-code"></div>
+          <p class="section-note">Waiting for authorization...</p>
+        </div>
+
+        <label>Model
+          <select id="copilot-model-id">
+            <option value="gpt-4o">gpt-4o (default)</option>
+          </select>
+          <button type="button" id="copilot-refresh-models" class="link-btn">Refresh models</button>
+        </label>
+
+        <div class="form-actions">
+          <button type="button" id="copilot-signin-btn" class="primary">Sign in with GitHub</button>
+          <button type="button" id="copilot-signout-btn" class="danger hidden">Sign out</button>
+          <button type="submit" class="primary">Save &amp; Activate</button>
+          <button type="button" id="copilot-close">Cancel</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="about-chromepilot">
+      <div class="about-title">About ChromePilot</div>
+      <div>Created by Abhay Chaturvedi</div>
+      <a href="mailto:chaturvediabhay24@gmail.com">Contact the creator</a>
+    </div>
+  </div>
+
+  <!-- Chat area -->
+  <div id="chat">
+    <div id="messages">
+      <div class="msg system">Ready. Configure API in settings (⚙), then type a message.</div>
+    </div>
+  </div>
+
+  <!-- Token usage bar -->
+  <div id="usage-bar" class="hidden">
+    <span id="usage-text"></span>
+  </div>
+
+  <!-- Input area -->
+  <div id="input-area">
+    <div id="chat-input-row">
+      <input type="text" id="chat-input" placeholder="Type a message...">
+      <button id="send-btn" class="primary">▶</button>
+      <button id="stop-btn" class="danger hidden">■</button>
+    </div>
+  </div>
+
+  <script src="../lib/marked.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
