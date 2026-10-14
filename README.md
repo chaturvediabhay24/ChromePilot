@@ -2,6 +2,20 @@
 
 ChromePilot is a Manifest V3 Chrome extension that observes and automates ordinary web pages using DOM snapshots, screenshots, browser actions, and an LLM.
 
+## Screenshots
+
+ChromePilot’s chat window stays available alongside the live webpage:
+
+![ChromePilot chat window beside Google](docs/screenshots/settings.png)
+
+The main side panel provides the task conversation and browser-agent controls:
+
+![ChromePilot main panel](docs/screenshots/main-panel.png)
+
+Provider setup supports GitHub Copilot sign-in and consent before tasks begin:
+
+![ChromePilot provider setup](docs/screenshots/provider-setup.png)
+
 ## AI Provider Compatibility
 
 This release targets **GitHub Copilot only** and requires compatible Copilot access. Other AI subscriptions are not supported. Public distribution of the current authentication integration still needs verification; see [release blockers](STORE_SUBMISSION.md). If you need support for another provider, please reach out at [chaturvediabhay24@gmail.com](mailto:chaturvediabhay24@gmail.com).
